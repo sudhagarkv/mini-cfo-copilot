@@ -105,8 +105,12 @@ if q:
     st.markdown("---")
     st.markdown("### 📊 Answer")
     
-    # Format the answer text better
-    if "\n" in text:
+    # Handle different response types
+    if intent == "data_not_available":
+        st.error(f"❌ {text}")
+    elif intent == "error":
+        st.error(f"⚠️ {text}")
+    elif "\n" in text:
         # Multi-line answers (like summaries)
         st.markdown(f"**{text.split(':')[0]}:**" if ":" in text else "**Result:**")
         formatted_text = text.replace("\n", "\n\n")
@@ -117,188 +121,190 @@ if q:
     
     summary_for_pdf = text
 
-    # Revenue vs Budget
-    if intent == "revenue_vs_budget":
-        st.markdown("#### 📈 Visualization")
-        month = pd.to_datetime(payload["month"])
-        df = pd.DataFrame([
-            {"type": "Actual", "value": payload["actual_usd"]},
-            {"type": "Budget", "value": payload["budget_usd"]},
-        ])
-        fig = px.bar(df, x="type", y="value", text_auto=".2s",
-                     title=f"Revenue vs Budget — {month.strftime('%B %Y')} (USD)",
-                     color="type", color_discrete_map={"Actual": "#1f77b4", "Budget": "#ff7f0e"})
-        fig.update_layout(yaxis_title="USD", showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
-
-    # Gross Margin Trend
-    elif intent == "gross_margin_trend":
-        st.markdown("#### 📈 Visualization")
-        series = pd.DataFrame(payload["series"])
-        fig = px.line(series, x="month", y="gross_margin_pct", markers=True,
-                      title="Gross Margin % Trend", line_shape="spline")
-        fig.update_layout(yaxis_title="%", xaxis_title="Month")
-        fig.update_traces(line_color="#2ca02c", marker_color="#2ca02c")
-        st.plotly_chart(fig, use_container_width=True)
-
-    # Opex Breakdown
-    elif intent == "opex_breakdown":
-        st.markdown("#### 📈 Visualization")
-        table = pd.DataFrame(payload["table"])
-        
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("**Breakdown Table:**")
-            st.dataframe(table, use_container_width=True)
-        
-        with col2:
-            fig = px.pie(table, names="category", values="total_usd",
-                         title="Opex Breakdown (USD)")
-            fig.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig, use_container_width=True)
-
-    # Cash Runway
-    elif intent == "cash_runway":
-        st.markdown("#### 📈 Visualization")
-        e = m.ebitda_series().sort_values("month").tail(12)
-        from agent.data import load_csvs
-        _, _, _, cash = load_csvs()
-        cash12 = (cash.sort_values("month").tail(12)
-                       .groupby("month")["cash_usd"].sum().reset_index())
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            fig1 = px.line(cash12, x="month", y="cash_usd", markers=True,
-                           title="Cash Balance (last 12 months)")
-            fig1.update_traces(line_color="#17becf", marker_color="#17becf")
-            st.plotly_chart(fig1, use_container_width=True)
-        
-        with col2:
-            fig2 = px.bar(e.tail(12), x="month", y="ebitda_usd",
-                          title="EBITDA Trend")
-            fig2.update_traces(marker_color="#ff7f0e")
-            st.plotly_chart(fig2, use_container_width=True)
-
-    # Revenue Trend
-    elif intent == "revenue_trend":
-        st.markdown("#### 📈 Visualization")
-        series = pd.DataFrame(payload["series"])
-        fig = px.line(series, x="month", y="amount_usd", markers=True,
-                      title="Revenue Trend (USD)", line_shape="spline")
-        fig.update_layout(yaxis_title="USD", xaxis_title="Month")
-        fig.update_traces(line_color="#1f77b4", marker_color="#1f77b4")
-        st.plotly_chart(fig, use_container_width=True)
-
-    # EBITDA Trend
-    elif intent == "ebitda_trend":
-        st.markdown("#### 📈 Visualization")
-        series = pd.DataFrame(payload["series"])
-        fig = px.line(series, x="month", y="ebitda_usd", markers=True,
-                      title="EBITDA Trend (USD)", line_shape="spline")
-        fig.update_layout(yaxis_title="USD", xaxis_title="Month")
-        fig.update_traces(line_color="#d62728", marker_color="#d62728")
-        st.plotly_chart(fig, use_container_width=True)
-
-    # Simple Metric (single value)
-    elif intent == "simple_metric":
-        if "value" in payload and "month" in payload:
-            st.markdown("#### 📊 Metric")
+    # Only show visualizations if we have valid data
+    if intent not in ["data_not_available", "error"]:
+        # Revenue vs Budget
+        if intent == "revenue_vs_budget":
+            st.markdown("#### 📈 Visualization")
             month = pd.to_datetime(payload["month"])
-            value = payload["value"]
-            
-            # Display as a metric card
-            st.metric(
-                label=f"{month.strftime('%B %Y')}",
-                value=f"${value:,.0f}"
-            )
-
-    # Performance Summary
-    elif intent == "performance_summary":
-        st.markdown("#### 📊 Key Metrics")
-        
-        # Key metrics display
-        col1, col2, col3, col4 = st.columns(4)
-        rev_data = payload["revenue"]
-        
-        with col1:
-            st.metric(
-                "Revenue", 
-                f"${rev_data['actual_usd']:,.0f}",
-                delta=f"{rev_data['variance_pct']:.1f}% vs Budget"
-            )
-        with col2:
-            st.metric("Gross Margin", f"{payload['gross_margin_pct']:.1f}%")
-        with col3:
-            st.metric("Total Opex", f"${payload['total_opex']:,.0f}")
-        with col4:
-            st.metric("EBITDA", f"${payload['ebitda']:,.0f}")
-        
-        st.markdown("#### 📈 Revenue vs Budget")
-        # Revenue vs Budget chart
-        df = pd.DataFrame([
-            {"type": "Actual", "value": rev_data["actual_usd"]},
-            {"type": "Budget", "value": rev_data["budget_usd"]},
-        ])
-        fig1 = px.bar(df, x="type", y="value", text_auto=".2s",
-                      title="Revenue vs Budget (USD)",
-                      color="type", color_discrete_map={"Actual": "#1f77b4", "Budget": "#ff7f0e"})
-        fig1.update_layout(yaxis_title="USD", showlegend=False)
-        st.plotly_chart(fig1, use_container_width=True)
-
-    # Growth Analysis
-    elif intent == "growth_analysis":
-        st.markdown("#### 📈 Growth Analysis")
-        current = payload["current"]
-        previous = payload["previous"]
-        growth_pct = payload["growth_pct"]
-        
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            st.metric(
-                "Growth Rate", 
-                f"{growth_pct:.1f}%", 
-                delta=f"${current - previous:,.0f}"
-            )
-        
-        with col2:
             df = pd.DataFrame([
-                {"Period": "Previous", "Value": previous},
-                {"Period": "Current", "Value": current},
+                {"type": "Actual", "value": payload["actual_usd"]},
+                {"type": "Budget", "value": payload["budget_usd"]},
             ])
-            fig = px.bar(df, x="Period", y="Value", text_auto=".2s",
-                         title=f"Growth: {growth_pct:.1f}%",
-                         color="Period", color_discrete_map={"Previous": "#ff7f0e", "Current": "#2ca02c"})
+            fig = px.bar(df, x="type", y="value", text_auto=".2s",
+                         title=f"Revenue vs Budget — {month.strftime('%B %Y')} (USD)",
+                         color="type", color_discrete_map={"Actual": "#1f77b4", "Budget": "#ff7f0e"})
             fig.update_layout(yaxis_title="USD", showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
 
-    # Financial Snapshot
-    elif intent == "financial_snapshot":
-        st.markdown("#### 📊 Financial Snapshot")
-        
-        # Key metrics in columns
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Revenue", f"${payload['revenue']:,.0f}")
-            st.metric("COGS", f"${payload['cogs']:,.0f}")
-        with col2:
-            st.metric("Gross Margin", f"{payload['gross_margin_pct']:.1f}%")
-            st.metric("Opex", f"${payload['opex']:,.0f}")
-        with col3:
-            st.metric("EBITDA", f"${payload['ebitda']:,.0f}")
-            st.metric("Cash", f"${payload['cash']:,.0f}")
-        
-        st.markdown("#### 📈 Financial Flow")
-        # Waterfall-style chart
-        categories = ['Revenue', 'COGS', 'Opex', 'EBITDA']
-        values = [payload['revenue'], -payload['cogs'], -payload['opex'], payload['ebitda']]
-        colors = ['#2ca02c', '#d62728', '#ff7f0e', '#1f77b4']
-        
-        fig = px.bar(x=categories, y=values, color=categories,
-                     title="Financial Waterfall",
-                     color_discrete_sequence=colors)
-        fig.update_layout(yaxis_title="USD", showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+        # Gross Margin Trend
+        elif intent == "gross_margin_trend":
+            st.markdown("#### 📈 Visualization")
+            series = pd.DataFrame(payload["series"])
+            fig = px.line(series, x="month", y="gross_margin_pct", markers=True,
+                          title="Gross Margin % Trend", line_shape="spline")
+            fig.update_layout(yaxis_title="%", xaxis_title="Month")
+            fig.update_traces(line_color="#2ca02c", marker_color="#2ca02c")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # Opex Breakdown
+        elif intent == "opex_breakdown":
+            st.markdown("#### 📈 Visualization")
+            table = pd.DataFrame(payload["table"])
+            
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.markdown("**Breakdown Table:**")
+                st.dataframe(table, use_container_width=True)
+            
+            with col2:
+                fig = px.pie(table, names="category", values="total_usd",
+                             title="Opex Breakdown (USD)")
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig, use_container_width=True)
+
+        # Cash Runway
+        elif intent == "cash_runway":
+            st.markdown("#### 📈 Visualization")
+            e = m.ebitda_series().sort_values("month").tail(12)
+            from agent.data import load_csvs
+            _, _, _, cash = load_csvs()
+            cash12 = (cash.sort_values("month").tail(12)
+                           .groupby("month")["cash_usd"].sum().reset_index())
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                fig1 = px.line(cash12, x="month", y="cash_usd", markers=True,
+                               title="Cash Balance (last 12 months)")
+                fig1.update_traces(line_color="#17becf", marker_color="#17becf")
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            with col2:
+                fig2 = px.bar(e.tail(12), x="month", y="ebitda_usd",
+                              title="EBITDA Trend")
+                fig2.update_traces(marker_color="#ff7f0e")
+                st.plotly_chart(fig2, use_container_width=True)
+
+        # Revenue Trend
+        elif intent == "revenue_trend":
+            st.markdown("#### 📈 Visualization")
+            series = pd.DataFrame(payload["series"])
+            fig = px.line(series, x="month", y="amount_usd", markers=True,
+                          title="Revenue Trend (USD)", line_shape="spline")
+            fig.update_layout(yaxis_title="USD", xaxis_title="Month")
+            fig.update_traces(line_color="#1f77b4", marker_color="#1f77b4")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # EBITDA Trend
+        elif intent == "ebitda_trend":
+            st.markdown("#### 📈 Visualization")
+            series = pd.DataFrame(payload["series"])
+            fig = px.line(series, x="month", y="ebitda_usd", markers=True,
+                          title="EBITDA Trend (USD)", line_shape="spline")
+            fig.update_layout(yaxis_title="USD", xaxis_title="Month")
+            fig.update_traces(line_color="#d62728", marker_color="#d62728")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # Simple Metric (single value)
+        elif intent == "simple_metric":
+            if "value" in payload and "month" in payload:
+                st.markdown("#### 📊 Metric")
+                month = pd.to_datetime(payload["month"])
+                value = payload["value"]
+                
+                # Display as a metric card
+                st.metric(
+                    label=f"{month.strftime('%B %Y')}",
+                    value=f"${value:,.0f}"
+                )
+
+        # Performance Summary
+        elif intent == "performance_summary":
+            st.markdown("#### 📊 Key Metrics")
+            
+            # Key metrics display
+            col1, col2, col3, col4 = st.columns(4)
+            rev_data = payload["revenue"]
+            
+            with col1:
+                st.metric(
+                    "Revenue", 
+                    f"${rev_data['actual_usd']:,.0f}",
+                    delta=f"{rev_data['variance_pct']:.1f}% vs Budget"
+                )
+            with col2:
+                st.metric("Gross Margin", f"{payload['gross_margin_pct']:.1f}%")
+            with col3:
+                st.metric("Total Opex", f"${payload['total_opex']:,.0f}")
+            with col4:
+                st.metric("EBITDA", f"${payload['ebitda']:,.0f}")
+            
+            st.markdown("#### 📈 Revenue vs Budget")
+            # Revenue vs Budget chart
+            df = pd.DataFrame([
+                {"type": "Actual", "value": rev_data["actual_usd"]},
+                {"type": "Budget", "value": rev_data["budget_usd"]},
+            ])
+            fig1 = px.bar(df, x="type", y="value", text_auto=".2s",
+                          title="Revenue vs Budget (USD)",
+                          color="type", color_discrete_map={"Actual": "#1f77b4", "Budget": "#ff7f0e"})
+            fig1.update_layout(yaxis_title="USD", showlegend=False)
+            st.plotly_chart(fig1, use_container_width=True)
+
+        # Growth Analysis
+        elif intent == "growth_analysis":
+            st.markdown("#### 📈 Growth Analysis")
+            current = payload["current"]
+            previous = payload["previous"]
+            growth_pct = payload["growth_pct"]
+            
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                st.metric(
+                    "Growth Rate", 
+                    f"{growth_pct:.1f}%", 
+                    delta=f"${current - previous:,.0f}"
+                )
+            
+            with col2:
+                df = pd.DataFrame([
+                    {"Period": "Previous", "Value": previous},
+                    {"Period": "Current", "Value": current},
+                ])
+                fig = px.bar(df, x="Period", y="Value", text_auto=".2s",
+                             title=f"Growth: {growth_pct:.1f}%",
+                             color="Period", color_discrete_map={"Previous": "#ff7f0e", "Current": "#2ca02c"})
+                fig.update_layout(yaxis_title="USD", showlegend=False)
+                st.plotly_chart(fig, use_container_width=True)
+
+        # Financial Snapshot
+        elif intent == "financial_snapshot":
+            st.markdown("#### 📊 Financial Snapshot")
+            
+            # Key metrics in columns
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Revenue", f"${payload['revenue']:,.0f}")
+                st.metric("COGS", f"${payload['cogs']:,.0f}")
+            with col2:
+                st.metric("Gross Margin", f"{payload['gross_margin_pct']:.1f}%")
+                st.metric("Opex", f"${payload['opex']:,.0f}")
+            with col3:
+                st.metric("EBITDA", f"${payload['ebitda']:,.0f}")
+                st.metric("Cash", f"${payload['cash']:,.0f}")
+            
+            st.markdown("#### 📈 Financial Flow")
+            # Waterfall-style chart
+            categories = ['Revenue', 'COGS', 'Opex', 'EBITDA']
+            values = [payload['revenue'], -payload['cogs'], -payload['opex'], payload['ebitda']]
+            colors = ['#2ca02c', '#d62728', '#ff7f0e', '#1f77b4']
+            
+            fig = px.bar(x=categories, y=values, color=categories,
+                         title="Financial Waterfall",
+                         color_discrete_sequence=colors)
+            fig.update_layout(yaxis_title="USD", showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
 
