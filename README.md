@@ -1,4 +1,4 @@
-# 🧮 Mini CFO Copilot
+#  Mini CFO Copilot
 
 An AI-powered financial assistant that answers ANY finance question directly from structured CSV data. Built with Streamlit, this tool transforms hours of manual financial analysis into instant, board-ready insights.
 
