@@ -4,7 +4,7 @@ An AI-powered financial assistant that answers ANY finance question directly fro
 
 ## ✨ What's New - Enhanced Agent
 
-**The agent now answers ANY financial question, not just 4 predefined ones!**
+**The agent now answers ANY financial question**
 
 ### 🚀 Key Improvements
 
@@ -14,42 +14,6 @@ An AI-powered financial assistant that answers ANY finance question directly fro
 - **Comprehensive Visualizations**: Automatic charts for all question types
 - **Financial Summaries**: Get complete performance overviews
 - **Growth Analysis**: Compare periods and track trends
-
-## 📊 Supported Question Types
-
-### Revenue Questions
-- "What was June 2025 revenue vs budget?"
-- "Show me revenue trend for last 6 months"
-- "What's our latest revenue?"
-- "How is revenue growing?"
-
-### Profitability Questions
-- "Show gross margin trend"
-- "What's our EBITDA for March 2025?"
-- "How's our performance this month?"
-- "Tell me about our profitability"
-
-### Cost Questions
-- "Break down Opex by category for June 2025"
-- "What are our COGS for latest month?"
-- "Show me total Opex for 2025"
-
-### Cash Questions
-- "What is our cash runway?"
-- "Show cash balance trend"
-- "What's our current cash position?"
-- "How much cash do we have?"
-
-### Growth & Comparison
-- "Compare this month vs last month"
-- "Show me year over year growth"
-- "Compare revenue vs budget"
-
-### General Financial Insights
-- "Give me a financial summary"
-- "How are we performing?"
-- "Show me key metrics for latest month"
-- "What's the financial overview?"
 
 ## 🎯 Core Metrics Calculated
 
