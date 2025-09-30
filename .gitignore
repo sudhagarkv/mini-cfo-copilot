@@ -27,6 +27,9 @@ rev_vs_budget.png
 opex.png
 cash.png
 
+# Excel files (contains sample data only)
+data.xlsx
+
 # Logs
 *.log
 
