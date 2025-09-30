@@ -15,6 +15,8 @@ An AI-powered financial assistant that answers ANY finance question directly fro
 - **Financial Summaries**: Get complete performance overviews
 - **Growth Analysis**: Compare periods and track trends
 
+
+
 ## 🎯 Core Metrics Calculated
 
 - **Revenue (USD)**: Actual vs budget with variance analysis
@@ -70,23 +72,7 @@ python test_enhanced_agent.py
 
 **Current Test Results**: ✅ 100% success rate (20/20 questions handled)
 
-## 📈 Sample Questions & Results
 
-### Revenue Analysis
-**Q**: "What was June 2025 revenue vs budget?"  
-**A**: June 2025 Revenue vs Budget: Actual $1,014,896, Budget $1,072,688, Variance $-57,792 (-5.4%).
-
-### Performance Summary
-**Q**: "How's our performance this month?"  
-**A**: December 2025 Performance Summary:
-- Revenue: $1,107,090 (vs Budget: $1,170,157, -5.4%)
-- Gross Margin: 84.8%
-- Total Opex: $468,127
-- EBITDA: $470,329
-
-### Growth Analysis
-**Q**: "How is revenue growing?"  
-**A**: Revenue Growth: December 2025 vs November 2025: 2.5% ($1,107,090 vs $1,080,090)
 
 ## 🎨 Features
 
@@ -143,11 +129,5 @@ The planner now uses sophisticated pattern matching to:
 - [ ] Custom KPI definitions
 - [ ] Email report scheduling
 - [ ] API endpoints for integration
-
-## 📝 License
-
-This project is built for the FP&A Coding Assignment and demonstrates end-to-end agent design with data analysis, intelligent question processing, and user experience.
-
----
 
 **Built with**: Python, Streamlit, Pandas, Plotly, and intelligent agent design principles.
